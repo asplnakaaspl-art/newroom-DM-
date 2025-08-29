@@ -11,7 +11,27 @@
         #entry-form input[type="text"] { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
         #entry-form button { padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; }
         #call-list { list-style-type: none; padding: 0; }
-        #call-list li { background-color: #fafafa; border: 1px solid #eee; padding: 12px; margin-bottom: 8px; border-radius: 4px; }
+        #call-list li { 
+            background-color: #fafafa; 
+            border: 1px solid #eee; 
+            padding: 12px; 
+            margin-bottom: 8px; 
+            border-radius: 4px; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -28,12 +48,11 @@
     <div id="list-container">
         <h2>回答一覧</h2>
         <ul id="call-list">
-            </ul>
+        </ul>
     </div>
 </div>
 
 <script>
-    // ここにFirebaseコンソールからコピーしたfirebaseConfigを貼り付ける
     var firebaseConfig = {
       apiKey: "AIzaSyAB71gIlxEhYHMFW8u02r2vyrQg4fiavOw",
       authDomain: "newroom-sheet.firebaseapp.com",
@@ -44,32 +63,50 @@
       appId: "1:749383250096:web:22f23190e5c0e581e78b75"
     };
 
-    // Firebaseの初期化
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
     const listRef = database.ref('call_list');
-
     const form = document.getElementById('entry-form');
     const input = document.getElementById('entry-name');
     const callList = document.getElementById('call-list');
 
-    // フォーム送信時の処理
+    // フォーム送信時の処理（変更なし）
     form.addEventListener('submit', function(event) {
         event.preventDefault();
         const name = input.value.trim();
         if (name !== '') {
-            // データをデータベースにプッシュ
             listRef.push({ name: name });
             input.value = '';
         }
     });
 
-    // データベースの変更をリアルタイムで監視
+    // データベースの変更をリアルタイムで監視（変更あり）
     listRef.on('child_added', (snapshot) => {
         const item = snapshot.val();
         const li = document.createElement('li');
         li.textContent = item.name;
+        li.setAttribute('data-key', snapshot.key); // データキーをHTML要素に保存
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '削除';
+        deleteBtn.classList.add('delete-btn');
+        deleteBtn.addEventListener('click', function() {
+            // Firebaseの該当データを削除
+            const itemKey = this.parentNode.getAttribute('data-key');
+            listRef.child(itemKey).remove();
+        });
+
+        li.appendChild(deleteBtn);
         callList.appendChild(li);
+    });
+
+    // データベースからデータが削除されたときの処理
+    listRef.on('child_removed', (snapshot) => {
+        const removedKey = snapshot.key;
+        const li = document.querySelector(`li[data-key="${removedKey}"]`);
+        if (li) {
+            li.remove();
+        }
     });
 </script>
 
