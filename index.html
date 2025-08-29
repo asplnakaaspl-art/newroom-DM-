@@ -5,76 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>呼びたい団体・個人リスト</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f4f4f9;
-            color: #333;
-        }
-        h1, h2 {
-            color: #555;
-        }
-        .container {
-            max-width: 800px;
-            margin: auto;
-            background: #fff;
-            padding: 20px 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        #entry-form {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        #entry-form input[type="text"] {
-            flex-grow: 1;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        #entry-form button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        #entry-form button:hover {
-            background-color: #0056b3;
-        }
-        #list-container {
-            border-top: 2px solid #eee;
-            padding-top: 20px;
-        }
-        #call-list {
-            list-style-type: none;
-            padding: 0;
-        }
-        #call-list li {
-            background-color: #fafafa;
-            border: 1px solid #eee;
-            padding: 12px;
-            margin-bottom: 8px;
-            border-radius: 4px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .delete-btn {
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            padding: 5px 10px;
-            cursor: pointer;
-        }
-        .delete-btn:hover {
-            background-color: #c82333;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; color: #333; }
+        .container { max-width: 800px; margin: auto; background: #fff; padding: 20px 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        #entry-form { display: flex; gap: 10px; margin-bottom: 20px; }
+        #entry-form input[type="text"] { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        #entry-form button { padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; }
+        #call-list { list-style-type: none; padding: 0; }
+        #call-list li { background-color: #fafafa; border: 1px solid #eee; padding: 12px; margin-bottom: 8px; border-radius: 4px; }
     </style>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
 <body>
 
@@ -93,66 +33,44 @@
 </div>
 
 <script>
+    // ここにFirebaseコンソールからコピーしたfirebaseConfigを貼り付ける
+    var firebaseConfig = {
+      apiKey: "AIzaSyAB71gIlxEhYHMFW8u02r2vyrQg4fiavOw",
+      authDomain: "newroom-sheet.firebaseapp.com",
+      databaseURL: "https://newroom-sheet-default-rtdb.firebaseio.com",
+      projectId: "newroom-sheet",
+      storageBucket: "newroom-sheet.firebasestorage.app",
+      messagingSenderId: "749383250096",
+      appId: "1:749383250096:web:22f23190e5c0e581e78b75"
+    };
+
+    // Firebaseの初期化
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    const listRef = database.ref('call_list');
+
     const form = document.getElementById('entry-form');
     const input = document.getElementById('entry-name');
     const callList = document.getElementById('call-list');
 
-    // ページ読み込み時にローカルストレージからデータを読み込む
-    window.onload = function() {
-        loadList();
-    };
-
     // フォーム送信時の処理
     form.addEventListener('submit', function(event) {
-        event.preventDefault(); // フォームのデフォルトの送信動作をキャンセル
-        
+        event.preventDefault();
         const name = input.value.trim();
         if (name !== '') {
-            addListItem(name);
-            input.value = ''; // 入力欄をクリア
-            saveList();
+            // データをデータベースにプッシュ
+            listRef.push({ name: name });
+            input.value = '';
         }
     });
 
-    // リスト項目を追加する関数
-    function addListItem(name) {
+    // データベースの変更をリアルタイムで監視
+    listRef.on('child_added', (snapshot) => {
+        const item = snapshot.val();
         const li = document.createElement('li');
-        li.textContent = name;
-        
-        const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = '削除';
-        deleteBtn.classList.add('delete-btn');
-        deleteBtn.addEventListener('click', function() {
-            li.remove();
-            saveList();
-        });
-
-        li.appendChild(deleteBtn);
+        li.textContent = item.name;
         callList.appendChild(li);
-    }
-
-    // ローカルストレージにリストを保存する関数
-    function saveList() {
-        const items = [];
-        callList.querySelectorAll('li').forEach(li => {
-            const text = li.childNodes[0].nodeValue.trim(); // テキストノードのみ取得
-            if (text) {
-                items.push(text);
-            }
-        });
-        localStorage.setItem('callListItems', JSON.stringify(items));
-    }
-
-    // ローカルストレージからリストを読み込む関数
-    function loadList() {
-        const storedItems = localStorage.getItem('callListItems');
-        if (storedItems) {
-            const items = JSON.parse(storedItems);
-            items.forEach(item => {
-                addListItem(item);
-            });
-        }
-    }
+    });
 </script>
 
 </body>
