@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>呼びたい団体・個人リスト</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        h1, h2 {
+            color: #555;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        #entry-form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        #entry-form input[type="text"] {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        #entry-form button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #entry-form button:hover {
+            background-color: #0056b3;
+        }
+        #list-container {
+            border-top: 2px solid #eee;
+            padding-top: 20px;
+        }
+        #call-list {
+            list-style-type: none;
+            padding: 0;
+        }
+        #call-list li {
+            background-color: #fafafa;
+            border: 1px solid #eee;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>呼びたい団体・個人を回答してください！</h1>
+    <form id="entry-form">
+        <input type="text" id="entry-name" placeholder="団体名や個人名を入力" required>
+        <button type="submit">追加</button>
+    </form>
+    
+    <div id="list-container">
+        <h2>回答一覧</h2>
+        <ul id="call-list">
+            </ul>
+    </div>
+</div>
+
+<script>
+    const form = document.getElementById('entry-form');
+    const input = document.getElementById('entry-name');
+    const callList = document.getElementById('call-list');
+
+    // ページ読み込み時にローカルストレージからデータを読み込む
+    window.onload = function() {
+        loadList();
+    };
+
+    // フォーム送信時の処理
+    form.addEventListener('submit', function(event) {
+        event.preventDefault(); // フォームのデフォルトの送信動作をキャンセル
+        
+        const name = input.value.trim();
+        if (name !== '') {
+            addListItem(name);
+            input.value = ''; // 入力欄をクリア
+            saveList();
+        }
+    });
+
+    // リスト項目を追加する関数
+    function addListItem(name) {
+        const li = document.createElement('li');
+        li.textContent = name;
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '削除';
+        deleteBtn.classList.add('delete-btn');
+        deleteBtn.addEventListener('click', function() {
+            li.remove();
+            saveList();
+        });
+
+        li.appendChild(deleteBtn);
+        callList.appendChild(li);
+    }
+
+    // ローカルストレージにリストを保存する関数
+    function saveList() {
+        const items = [];
+        callList.querySelectorAll('li').forEach(li => {
+            const text = li.childNodes[0].nodeValue.trim(); // テキストノードのみ取得
+            if (text) {
+                items.push(text);
+            }
+        });
+        localStorage.setItem('callListItems', JSON.stringify(items));
+    }
+
+    // ローカルストレージからリストを読み込む関数
+    function loadList() {
+        const storedItems = localStorage.getItem('callListItems');
+        if (storedItems) {
+            const items = JSON.parse(storedItems);
+            items.forEach(item => {
+                addListItem(item);
+            });
+        }
+    }
+</script>
+
+</body>
+</html>
